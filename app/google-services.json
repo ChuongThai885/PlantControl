@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "50063191700",
+    "firebase_url": "https://pbl5-rasberry-default-rtdb.firebaseio.com",
+    "project_id": "pbl5-rasberry",
+    "storage_bucket": "pbl5-rasberry.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50063191700:android:e04ee9237f1af2e52d4e81",
+        "android_client_info": {
+          "package_name": "com.PBL5.plantcontrol"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "50063191700-420le4echjfl6n462jhr8cnkv8gulgcn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwVamh63qixtSBFJCmCmfFu_mpP3fgFF4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "50063191700-420le4echjfl6n462jhr8cnkv8gulgcn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
