@@ -1,10 +1,18 @@
 package com.PBL5.plantcontrol
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -25,8 +33,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.PBL5.plantcontrol.ui.theme.PlantControlTheme
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -34,6 +44,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.google.firebase.database.DataSnapshot
@@ -48,6 +60,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             PlantControlTheme {
+                val context = LocalContext.current
+
+                val channelId= "notification"
+                val notificationId= 0
+                val myBitmap= BitmapFactory.decodeResource(context.resources,R.drawable.logo)
+                val bigText = ""
+                LaunchedEffect(Unit) {
+                    createNotificationChannel(channelId, context)
+                }
+
+                val status= remember {
+                    mutableStateOf(false)
+                }
                 val database= Firebase.database
 
                 val humidity= remember {
@@ -133,12 +158,24 @@ class MainActivity : ComponentActivity() {
                 val imgSrc= remember {
                     mutableStateOf("")
                 }
-                val imgSrcRef= database.getReference("img")
+                val imgSrcRef= database.getReference("img_detected")
                 imgSrcRef.addValueEventListener(object: ValueEventListener {
                     override fun onDataChange(snapshot: DataSnapshot) {
                         val value = snapshot.getValue<String>()
                         if (value != null) {
                             imgSrc.value= value
+                            if (status.value) {
+                                createNotificationTap(
+                                    context,
+                                    channelId,
+                                    notificationId,
+                                    "Phát hiện côn trùng!!",
+                                    "Hệ thống phát hiện côn trùng trên cây của bạn, vui lòng kiểm tra!!"
+                                )
+                            }
+                            else {
+                                status.value=!status.value
+                            }
                         }
                         Log.d("DEBUG", "Value is: " + value)
                     }
@@ -146,6 +183,7 @@ class MainActivity : ComponentActivity() {
                         Log.w("ERROR", "Failed to read value.", error.toException())
                     }
                 })
+
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -240,17 +278,22 @@ class MainActivity : ComponentActivity() {
                             }
 
                         }
-                        val context = LocalContext.current
-                        Button(
-                            content = {
-                                Text("Open")
-                            },
-                            onClick = {
-                                val intent = Intent(context, DetectActivity::class.java)
-                                startActivity(intent)
-                            }
-                        )
-                        abc(imgSrc.value)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Button(
+                                content = {
+                                    Text("Nhận diện bệnh dịch")
+                                },
+                                onClick = {
+                                    val intent = Intent(context, DetectActivity::class.java)
+                                    startActivity(intent)
+                                }
+                            )
+                        }
+                        show_img(imgSrc.value)
                     }
                 }
             }
@@ -335,14 +378,14 @@ fun  createLogo() {
 }
 
 @Composable
-fun abc(
+fun show_img(
     src: String
 ){
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(10.dp)
-            .height(100.dp)
+            .height(160.dp)
     ) {
         Image(
             painter = rememberAsyncImagePainter(
@@ -413,8 +456,44 @@ fun Switch2(
             )
         )
     }
+}
 
-//    Spacer(modifier = Modifier.padding(10.dp))
+fun createNotificationChannel(channelId: String, context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val name= "notification"
+        val desc= "notification manager"
+        val importance= NotificationManager.IMPORTANCE_DEFAULT
+        val channel= NotificationChannel(channelId, name, importance).apply {
+            description= desc
+        }
+        val  notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+}
+
+fun createNotificationTap(
+    context: Context,
+    channelId: String,
+    notificationId: Int,
+    textTitle: String,
+    textContent: String,
+    priority: Int = NotificationCompat.PRIORITY_DEFAULT
+) {
+    val intent= Intent(context, MainActivity::class.java).apply {
+        flags= Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    }
+    val pendingIntent: PendingIntent= PendingIntent.getActivity(context, 0, intent, 0)
+
+    val builder= NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(R.drawable.logo)
+        .setContentTitle(textTitle)
+        .setContentText(textContent)
+        .setPriority(priority)
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+    with(NotificationManagerCompat.from(context)) {
+        notify(notificationId, builder.build())
+    }
 }
 
 @Composable
